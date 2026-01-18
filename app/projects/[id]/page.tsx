@@ -1,0 +1,371 @@
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Navigation from "@/components/Navigation";
+import Link from "next/link";
+import { getCurrentWeekSunday, getCurrentWeekSaturday, getWeekNumber, formatDate } from "@/lib/utils";
+
+export const dynamic = 'force-dynamic';
+
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: {
+      milestones: {
+        include: {
+          weeklyProgress: {
+            orderBy: { weekStartDate: "desc" },
+          },
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    notFound();
+  }
+
+  // Sort milestones: current first, then by targetDate or createdAt
+  const sortedMilestones = [...project.milestones].sort((a, b) => {
+    // Current milestone first
+    if (a.isCurrent && !b.isCurrent) return -1;
+    if (!a.isCurrent && b.isCurrent) return 1;
+    
+    // Then by targetDate if available
+    if (a.targetDate && b.targetDate) {
+      return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+    }
+    if (a.targetDate) return -1;
+    if (b.targetDate) return 1;
+    
+    // Finally by createdAt
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const currentMilestone = project.milestones.find((m) => m.isCurrent);
+  const isSunday = new Date().getDay() === 0;
+
+  // Get all weekly progress for current milestone
+  const allWeeklyProgress = currentMilestone?.weeklyProgress || [];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <Navigation />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Link
+              href="/projects"
+              className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 font-medium transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Projects
+            </Link>
+          </div>
+
+          {/* Project Header Card */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <h1 className="text-4xl font-bold text-gray-900">
+                    {project.name}
+                  </h1>
+                  <span
+                    className={`px-4 py-1.5 text-sm font-semibold rounded-full ${
+                      project.status === "active"
+                        ? "bg-green-100 text-green-800 border border-green-200"
+                        : project.status === "completed"
+                        ? "bg-gray-100 text-gray-800 border border-gray-200"
+                        : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                    }`}
+                  >
+                    {project.status}
+                  </span>
+                </div>
+                {project.description && (
+                  <p className="text-gray-600 mb-6 text-lg leading-relaxed">{project.description}</p>
+                )}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                    Major Goal
+                  </h3>
+                  <p className="text-xl text-gray-900 font-semibold leading-relaxed">{project.majorGoal}</p>
+                </div>
+              </div>
+              <Link
+                href={`/projects/${project.id}/milestones/new`}
+                className="ml-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-semibold flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Milestone
+              </Link>
+            </div>
+          </div>
+
+          {isSunday && currentMilestone && (
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">It's Sunday! Time to track weekly progress</h3>
+                  <p className="text-blue-100 mb-4">
+                    Record what you completed last week and plan for next week.
+                  </p>
+                </div>
+                <Link
+                  href={`/weekly-progress/new?milestoneId=${currentMilestone.id}`}
+                  className="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors font-semibold whitespace-nowrap"
+                >
+                  Create Weekly Report
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Milestones Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+              <svg className="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Milestones
+            </h2>
+
+            {sortedMilestones.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">No milestones yet. Create one to get started.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedMilestones.map((milestone) => {
+                  const progressCount = milestone.weeklyProgress.length;
+                  return (
+                    <div
+                      key={milestone.id}
+                      className={`rounded-xl p-6 border-2 transition-all duration-200 ${
+                        milestone.isCurrent
+                          ? "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg"
+                          : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
+                            <h3 className="text-xl font-bold text-gray-900">
+                              {milestone.title}
+                            </h3>
+                            {milestone.isCurrent && (
+                              <span className="px-3 py-1 text-xs font-bold bg-blue-600 text-white rounded-full uppercase tracking-wide">
+                                Current
+                              </span>
+                            )}
+                            <span
+                              className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                milestone.status === "completed"
+                                  ? "bg-green-100 text-green-800 border border-green-200"
+                                  : milestone.status === "in-progress"
+                                  ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                                  : "bg-gray-100 text-gray-800 border border-gray-200"
+                              }`}
+                            >
+                              {milestone.status}
+                            </span>
+                          </div>
+                          {milestone.description && (
+                            <p className="text-gray-600 mb-3 leading-relaxed">{milestone.description}</p>
+                          )}
+                          {milestone.targetDate && (
+                            <div className="flex items-center text-sm text-gray-500 mt-2">
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Target: {formatDate(milestone.targetDate)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {milestone.isCurrent && milestone.weeklyProgress.length > 0 && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <h4 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">
+                            Recent Weekly Progress ({progressCount} total)
+                          </h4>
+                          <div className="grid gap-3">
+                            {milestone.weeklyProgress.slice(0, 3).map((progress) => {
+                              const weekStart = new Date(progress.weekStartDate);
+                              const weekEnd = new Date(progress.weekEndDate);
+                              const weekNum = getWeekNumber(weekStart);
+                              const completedTasks = JSON.parse(progress.completedThisWeek || "[]");
+                              const plannedTasks = JSON.parse(progress.plannedForNextWeek || "[]");
+
+                              return (
+                                <div
+                                  key={progress.id}
+                                  className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <div className="font-bold text-gray-900 mb-1">
+                                        Week {weekNum}, {weekStart.getFullYear()}
+                                      </div>
+                                      <div className="text-sm text-gray-600">
+                                        {formatDate(weekStart)} - {formatDate(weekEnd)}
+                                      </div>
+                                    </div>
+                                    <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                      progress.goalsAchieved 
+                                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                                        : 'bg-red-100 text-red-800 border border-red-200'
+                                    }`}>
+                                      {progress.goalsAchieved ? '✓ Achieved' : '✗ Not Achieved'}
+                                    </div>
+                                  </div>
+                                  {completedTasks.length > 0 && (
+                                    <div className="mb-2">
+                                      <div className="text-xs font-semibold text-gray-500 mb-1">Completed:</div>
+                                      <ul className="text-sm text-gray-700 space-y-1">
+                                        {completedTasks.map((task: string, idx: number) => (
+                                          <li key={idx} className="flex items-start">
+                                            <span className="text-green-500 mr-2">✓</span>
+                                            <span>{task}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {plannedTasks.length > 0 && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-gray-500 mb-1">Planned:</div>
+                                      <ul className="text-sm text-gray-700 space-y-1">
+                                        {plannedTasks.map((task: string, idx: number) => (
+                                          <li key={idx} className="flex items-start">
+                                            <span className="text-blue-500 mr-2">→</span>
+                                            <span>{task}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {progress.notes && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100">
+                                      <p className="text-sm text-gray-600 italic">{progress.notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Weekly Progress History Section */}
+          {currentMilestone && allWeeklyProgress.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+                <svg className="w-8 h-8 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Weekly Progress History
+              </h2>
+              <div className="grid gap-4">
+                {allWeeklyProgress.map((progress) => {
+                  const weekStart = new Date(progress.weekStartDate);
+                  const weekEnd = new Date(progress.weekEndDate);
+                  const weekNum = getWeekNumber(weekStart);
+                  const completedTasks = JSON.parse(progress.completedThisWeek || "[]");
+                  const plannedTasks = JSON.parse(progress.plannedForNextWeek || "[]");
+
+                  return (
+                    <div
+                      key={progress.id}
+                      className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <div className="text-lg font-bold text-gray-900 mb-1">
+                            Week {weekNum}, {weekStart.getFullYear()}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDate(weekStart)} - {formatDate(weekEnd)}
+                          </div>
+                        </div>
+                        <div className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
+                          progress.goalsAchieved 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : 'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          {progress.goalsAchieved ? '✓ Goals Achieved' : '✗ Goals Not Achieved'}
+                        </div>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        {completedTasks.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Completed This Week</h5>
+                            <ul className="space-y-2">
+                              {completedTasks.map((task: string, idx: number) => (
+                                <li key={idx} className="flex items-start text-sm text-gray-700">
+                                  <span className="text-green-500 mr-2 mt-0.5">✓</span>
+                                  <span>{task}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {plannedTasks.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Planned For Next Week</h5>
+                            <ul className="space-y-2">
+                              {plannedTasks.map((task: string, idx: number) => (
+                                <li key={idx} className="flex items-start text-sm text-gray-700">
+                                  <span className="text-blue-500 mr-2 mt-0.5">→</span>
+                                  <span>{task}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {progress.notes && (
+                        <div className="pt-4 border-t border-gray-200">
+                          <p className="text-sm text-gray-600 italic">{progress.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {currentMilestone && allWeeklyProgress.length === 0 && (
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Weekly Progress History</h2>
+              <p className="text-gray-600 mb-4">No weekly progress reports yet for the current milestone.</p>
+              <Link
+                href={`/weekly-progress/new?milestoneId=${currentMilestone.id}`}
+                className="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all font-semibold"
+              >
+                Create First Report
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
