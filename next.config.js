@@ -8,12 +8,13 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 if (!process.env.NEXTAUTH_URL) {
   // Vercel provides VERCEL_URL (without protocol) during build and runtime
-  // Also check VERCEL (boolean) to detect Vercel environment
   if (process.env.VERCEL_URL) {
     process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else if (process.env.VERCEL && process.env.VERCEL_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  } else if (process.env.APPLICATION_URL) {
+    // cPanel/Namecheap might set this
+    process.env.NEXTAUTH_URL = process.env.APPLICATION_URL;
   } else {
+    // Default - will need to be set via environment variable in cPanel
     process.env.NEXTAUTH_URL = 'http://localhost:3000';
   }
 }
