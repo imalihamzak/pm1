@@ -4,7 +4,7 @@
 export const config = {
   // NextAuth Configuration
   nextAuthSecret: "development-secret-key-change-in-production-use-random-string",
-  nextAuthUrl: "", // Leave empty for auto-detection, or set your production URL here
+  nextAuthUrl: "http://localhost:3000", // Default for local dev, auto-detected on Vercel
 
   // Database Configuration
   databaseUrl: "mongodb+srv://imalishahzadk:imalihamzak@cluster0.yxiquws.mongodb.net/pm?retryWrites=true&w=majority",
