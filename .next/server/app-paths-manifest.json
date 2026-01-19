@@ -13,7 +13,7 @@
   "/projects/new/page": "app/projects/new/page.js",
   "/reminders/page": "app/reminders/page.js",
   "/weekly-progress/new/page": "app/weekly-progress/new/page.js",
+  "/projects/[id]/page": "app/projects/[id]/page.js",
   "/projects/page": "app/projects/page.js",
-  "/page": "app/page.js",
-  "/projects/[id]/page": "app/projects/[id]/page.js"
+  "/page": "app/page.js"
 }
