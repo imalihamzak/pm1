@@ -1,9 +1,10 @@
 import nodemailer from "nodemailer";
+import { config } from "./config";
 
-const smtpHost = process.env.SMTP_HOST ?? "softechinc.ai";
-const smtpPort = Number(process.env.SMTP_PORT ?? "465");
-const smtpUser = process.env.SMTP_USER ?? "noreply@softechinc.ai";
-const smtpPass = process.env.SMTP_PASS ?? "y&S@!UoK83&S";
+const smtpHost = config.smtp.host;
+const smtpPort = config.smtp.port;
+const smtpUser = config.smtp.user;
+const smtpPass = config.smtp.pass;
 
 export const transporter = nodemailer.createTransport({
   host: smtpHost,

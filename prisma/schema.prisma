@@ -7,7 +7,8 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  url      = "mongodb+srv://imalishahzadk:imalihamzak@cluster0.yxiquws.mongodb.net/pm?retryWrites=true&w=majority"
+  // Note: The PrismaClient will use the value from lib/config.ts at runtime
 }
 
 model Project {

@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { config } from "./config";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -34,7 +35,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "development-secret-key-change-in-production-use-random-string",
+  secret: config.nextAuthSecret,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -49,5 +50,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: false,
 };
