@@ -24,12 +24,18 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
-      } else {
+        console.error("Login error:", result.error);
+        setError(result.error === "CredentialsSignin" 
+          ? "Invalid email or password" 
+          : `Login failed: ${result.error}`);
+      } else if (result?.ok) {
         router.push("/");
         router.refresh();
+      } else {
+        setError("An unexpected error occurred. Please try again.");
       }
     } catch (error) {
+      console.error("Login exception:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
