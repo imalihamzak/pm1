@@ -1,3 +1,5 @@
+// Import initialization FIRST to set environment variables
+import "./nextauth-init";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { config } from "./config";
