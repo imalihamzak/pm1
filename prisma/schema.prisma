@@ -17,6 +17,7 @@ model Project {
   description String?
   majorGoal   String
   status      String    @default("active") // active | completed | on-hold
+  createdBy   String?   // Email of the user who created the project (optional for legacy projects)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import { getCurrentWeekSunday, getCurrentWeekSaturday } from "@/lib/utils";
+import Toast from "@/components/Toast";
 
 export default function WeeklyProgressForm() {
   const router = useRouter();
@@ -11,6 +12,11 @@ export default function WeeklyProgressForm() {
   const milestoneId = searchParams.get("milestoneId");
 
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
+  });
   const [formData, setFormData] = useState({
     milestoneId: milestoneId || "",
     weekStartDate: "",
@@ -72,7 +78,7 @@ export default function WeeklyProgressForm() {
     setLoading(true);
 
     if (!formData.milestoneId) {
-      alert("Please select a milestone");
+      setToast({ message: "Please select a milestone", type: "error", isVisible: true });
       setLoading(false);
       return;
     }
@@ -98,15 +104,17 @@ export default function WeeklyProgressForm() {
 
       if (response.ok) {
         const progress = await response.json();
-        // Navigate back to project page
-        router.push(`/projects/${progress.projectId}`);
+        setToast({ message: "Weekly progress created successfully!", type: "success", isVisible: true });
+        setTimeout(() => {
+          router.push(`/projects/${progress.projectId}`);
+        }, 1000);
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to create weekly progress");
+        setToast({ message: error.error || "Failed to create weekly progress", type: "error", isVisible: true });
       }
     } catch (error) {
       console.error("Error creating weekly progress:", error);
-      alert("Error creating weekly progress");
+      setToast({ message: "Error creating weekly progress", type: "error", isVisible: true });
     } finally {
       setLoading(false);
     }
@@ -278,6 +286,14 @@ export default function WeeklyProgressForm() {
           </form>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }

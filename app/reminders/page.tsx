@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import Link from "next/link";
+import Toast from "@/components/Toast";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface Reminder {
   id: string;
@@ -21,6 +23,8 @@ interface Reminder {
 export default function RemindersPage() {
   const router = useRouter();
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [filteredReminders, setFilteredReminders] = useState<Reminder[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,11 +35,44 @@ export default function RemindersPage() {
     reminderDate: "",
   });
   const [projects, setProjects] = useState<any[]>([]);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
+  });
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; reminderId: string | null }>({
+    isOpen: false,
+    reminderId: null,
+  });
+  const [sendModal, setSendModal] = useState<{ isOpen: boolean; reminderId: string | null }>({
+    isOpen: false,
+    reminderId: null,
+  });
+  const [deletingReminderId, setDeletingReminderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReminders();
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredReminders(reminders);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredReminders(
+        reminders.filter(
+          (reminder) =>
+            reminder.subject.toLowerCase().includes(query) ||
+            reminder.message.toLowerCase().includes(query) ||
+            reminder.recipientEmail.toLowerCase().includes(query) ||
+            reminder.project.name.toLowerCase().includes(query) ||
+            reminder.status.toLowerCase().includes(query)
+        )
+      );
+    }
+  }, [searchQuery, reminders]);
 
   const fetchReminders = async () => {
     try {
@@ -43,6 +80,7 @@ export default function RemindersPage() {
       if (response.ok) {
         const data = await response.json();
         setReminders(data);
+        setFilteredReminders(data);
       }
     } catch (error) {
       console.error("Error fetching reminders:", error);
@@ -56,11 +94,16 @@ export default function RemindersPage() {
       const response = await fetch("/api/projects");
       if (response.ok) {
         const data = await response.json();
+        // Only show projects user has access to (API already filters, but double-check)
         setProjects(data);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
     }
+  };
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type, isVisible: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,40 +126,83 @@ export default function RemindersPage() {
           recipientEmail: "",
           reminderDate: "",
         });
-        fetchReminders();
+        await fetchReminders();
+        showToast("Reminder created successfully!", "success");
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to create reminder");
+        showToast(error.error || "Failed to create reminder", "error");
       }
     } catch (error) {
       console.error("Error creating reminder:", error);
-      alert("Error creating reminder");
+      showToast("Error creating reminder", "error");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this reminder?")) {
-      return;
-    }
+  const handleDeleteClick = (id: string) => {
+    setDeleteModal({ isOpen: true, reminderId: id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.reminderId) return;
+
+    setDeletingReminderId(deleteModal.reminderId);
 
     try {
-      const response = await fetch(`/api/reminders/${id}`, {
+      const response = await fetch(`/api/reminders/${deleteModal.reminderId}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        fetchReminders();
+        await fetchReminders();
+        setDeleteModal({ isOpen: false, reminderId: null });
+        showToast("Reminder deleted successfully!", "success");
       } else {
-        alert("Failed to delete reminder");
+        showToast("Failed to delete reminder", "error");
+        setDeleteModal({ isOpen: false, reminderId: null });
       }
     } catch (error) {
       console.error("Error deleting reminder:", error);
-      alert("Error deleting reminder");
+      showToast("Error deleting reminder", "error");
+      setDeleteModal({ isOpen: false, reminderId: null });
+    } finally {
+      setDeletingReminderId(null);
     }
   };
 
-  const scheduledReminders = reminders.filter((r) => r.status === "scheduled");
-  const sentReminders = reminders.filter((r) => r.status === "sent");
+  const handleSendNowClick = (id: string) => {
+    setSendModal({ isOpen: true, reminderId: id });
+  };
+
+  const handleSendConfirm = async () => {
+    if (!sendModal.reminderId) return;
+
+    setSendingReminderId(sendModal.reminderId);
+    setSendModal({ isOpen: false, reminderId: null });
+
+    try {
+      const response = await fetch("/api/reminders/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminderId: sendModal.reminderId }),
+      });
+
+      if (response.ok) {
+        await fetchReminders();
+        showToast("Reminder sent successfully!", "success");
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Failed to send reminder. Check SMTP configuration.", "error");
+      }
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      showToast("Error sending reminder", "error");
+    } finally {
+      setSendingReminderId(null);
+    }
+  };
+
+  const scheduledReminders = filteredReminders.filter((r) => r.status === "scheduled");
+  const sentReminders = filteredReminders.filter((r) => r.status === "sent");
 
   if (loading) {
     return (
@@ -134,17 +220,43 @@ export default function RemindersPage() {
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Email Reminders</h1>
               <p className="text-sm text-gray-600">Schedule and manage email reminders for projects</p>
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-semibold text-sm"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-semibold text-sm whitespace-nowrap"
             >
               {showForm ? "Cancel" : "+ New Reminder"}
             </button>
+          </div>
+
+          {/* Search Filter */}
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search reminders by subject, message, email, project, or status..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <svg
+                className="w-5 h-5 text-gray-400 absolute left-3 top-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-sm text-gray-600">
+                Found {filteredReminders.length} reminder{filteredReminders.length !== 1 ? "s" : ""}
+              </p>
+            )}
           </div>
 
           {showForm && (
@@ -303,12 +415,32 @@ export default function RemindersPage() {
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDelete(reminder.id)}
-                          className="ml-4 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          Delete
-                        </button>
+                        <div className="ml-4 flex flex-col gap-2">
+                          {reminder.status === "scheduled" && (
+                            <button
+                              onClick={() => handleSendNowClick(reminder.id)}
+                              disabled={sendingReminderId === reminder.id}
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                                sendingReminderId === reminder.id
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "text-green-600 hover:bg-green-50"
+                              }`}
+                            >
+                              {sendingReminderId === reminder.id ? "Sending..." : "Send Now"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteClick(reminder.id)}
+                            disabled={deletingReminderId === reminder.id}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                              deletingReminderId === reminder.id
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "text-red-600 hover:bg-red-50"
+                            }`}
+                          >
+                            {deletingReminderId === reminder.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -362,7 +494,7 @@ export default function RemindersPage() {
               </div>
             )}
 
-            {reminders.length === 0 && !showForm && (
+            {filteredReminders.length === 0 && !showForm && (
               <div className="bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,6 +516,39 @@ export default function RemindersPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Reminder"
+        message="Are you sure you want to delete this reminder? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        isLoading={deletingReminderId !== null}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModal({ isOpen: false, reminderId: null })}
+      />
+
+      {/* Send Confirmation Modal */}
+      <ConfirmModal
+        isOpen={sendModal.isOpen}
+        title="Send Reminder"
+        message="Are you sure you want to send this reminder now?"
+        confirmText="Send Now"
+        cancelText="Cancel"
+        type="info"
+        onConfirm={handleSendConfirm}
+        onCancel={() => setSendModal({ isOpen: false, reminderId: null })}
+      />
     </div>
   );
 }

@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { projectId, title, description, status, isCurrent, targetDate } = body;
 
@@ -10,6 +21,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Project ID and title are required" },
         { status: 400 }
+      );
+    }
+
+    // Verify user has access to the project
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { error: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    const userRole = (session.user as any).role || "user";
+    if (userRole !== "manager" && project.createdBy !== session.user.email) {
+      return NextResponse.json(
+        { error: "Access denied. You can only create milestones for your own projects." },
+        { status: 403 }
       );
     }
 

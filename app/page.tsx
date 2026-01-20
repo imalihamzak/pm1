@@ -1,16 +1,47 @@
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 
 export const dynamic = 'force-dynamic';
 
 async function getStats() {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return { projectCount: 0, milestoneCount: 0, progressCount: 0, reminderCount: 0 };
+    }
+
+    const userEmail = session.user.email;
+    const userRole = (session.user as any).role || "user";
+
+    // Build filters: manager sees all, others only their own
+    let projectFilter: any = {};
+    if (userRole !== "manager") {
+      projectFilter.createdBy = userEmail;
+    }
+
+    // Get user's projects for counting milestones and progress
+    const userProjects = await prisma.project.findMany({
+      where: projectFilter,
+      select: { id: true },
+    });
+    const projectIds = userProjects.map((p) => p.id);
+
     const [projectCount, milestoneCount, progressCount, reminderCount] = await Promise.all([
-      prisma.project.count(),
-      prisma.milestone.count(),
-      prisma.weeklyProgress.count(),
-      prisma.emailReminder.count({ where: { status: "scheduled" } }),
+      prisma.project.count({ where: projectFilter }),
+      prisma.milestone.count({ where: { projectId: { in: projectIds } } }),
+      prisma.weeklyProgress.count({
+        where: { milestone: { projectId: { in: projectIds } } },
+      }),
+      prisma.emailReminder.count({
+        where: {
+          status: "scheduled",
+          project: projectFilter,
+        },
+      }),
     ]);
 
     return { projectCount, milestoneCount, progressCount, reminderCount };

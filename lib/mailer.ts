@@ -9,10 +9,14 @@ const smtpPass = config.smtp.pass;
 export const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
-  secure: true,
+  secure: true, // Use SSL/TLS
   auth: {
     user: smtpUser,
     pass: smtpPass,
+  },
+  tls: {
+    // Don't reject unauthorized certificates (handles expired certificates)
+    rejectUnauthorized: false,
   },
   debug: true,
   logger: true,

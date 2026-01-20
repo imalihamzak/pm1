@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "ProjectHub - Project Management System",
+  title: "Softech Inc",
   description: "Streamline your project management workflow with powerful tracking, milestones, and progress monitoring",
 };
 

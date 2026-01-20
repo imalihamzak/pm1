@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import Toast from "@/components/Toast";
 
 export default function NewMilestonePage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
+  });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -35,14 +41,17 @@ export default function NewMilestonePage() {
       });
 
       if (response.ok) {
-        router.push(`/projects/${projectId}`);
+        setToast({ message: "Milestone created successfully!", type: "success", isVisible: true });
+        setTimeout(() => {
+          router.push(`/projects/${projectId}`);
+        }, 1000);
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to create milestone");
+        setToast({ message: error.error || "Failed to create milestone", type: "error", isVisible: true });
       }
     } catch (error) {
       console.error("Error creating milestone:", error);
-      alert("Error creating milestone");
+      setToast({ message: "Error creating milestone", type: "error", isVisible: true });
     } finally {
       setLoading(false);
     }
@@ -178,6 +187,14 @@ export default function NewMilestonePage() {
           </form>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }

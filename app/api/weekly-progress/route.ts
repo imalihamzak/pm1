@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       milestoneId,
@@ -21,15 +32,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the milestone to find project ID
+    // Get the milestone and its project to verify access
     const milestone = await prisma.milestone.findUnique({
       where: { id: milestoneId },
+      include: {
+        project: true,
+      },
     });
 
     if (!milestone) {
       return NextResponse.json(
         { error: "Milestone not found" },
         { status: 404 }
+      );
+    }
+
+    // Check access: manager can access all, others only their own projects
+    const userRole = (session.user as any).role || "user";
+    if (userRole !== "manager" && milestone.project.createdBy !== session.user.email) {
+      return NextResponse.json(
+        { error: "Access denied. You can only add progress to your own projects." },
+        { status: 403 }
       );
     }
 

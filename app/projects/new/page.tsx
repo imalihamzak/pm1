@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import Toast from "@/components/Toast";
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -12,6 +13,11 @@ export default function NewProjectPage() {
     description: "",
     majorGoal: "",
     status: "active",
+  });
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,13 +35,16 @@ export default function NewProjectPage() {
 
       if (response.ok) {
         const project = await response.json();
-        router.push(`/projects/${project.id}`);
+        setToast({ message: "Project created successfully!", type: "success", isVisible: true });
+        setTimeout(() => {
+          router.push(`/projects/${project.id}`);
+        }, 1000);
       } else {
-        alert("Failed to create project");
+        setToast({ message: "Failed to create project", type: "error", isVisible: true });
       }
     } catch (error) {
       console.error("Error creating project:", error);
-      alert("Error creating project");
+      setToast({ message: "Error creating project", type: "error", isVisible: true });
     } finally {
       setLoading(false);
     }
@@ -150,6 +159,14 @@ export default function NewProjectPage() {
           </form>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }

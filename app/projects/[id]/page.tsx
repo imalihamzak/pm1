@@ -1,8 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Navigation from "@/components/Navigation";
 import Link from "next/link";
 import { getCurrentWeekSunday, getCurrentWeekSaturday, getWeekNumber, formatDate } from "@/lib/utils";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +13,12 @@ export default async function ProjectDetailPage({
 }: {
   params: { id: string };
 }) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     include: {
@@ -26,6 +34,12 @@ export default async function ProjectDetailPage({
 
   if (!project) {
     notFound();
+  }
+
+  // Check access: manager can see all, others only their own
+  const userRole = (session.user as any).role || "user";
+  if (userRole !== "manager" && project.createdBy !== session.user.email) {
+    redirect("/projects");
   }
 
   // Sort milestones: current first, then by targetDate or createdAt
@@ -54,7 +68,7 @@ export default async function ProjectDetailPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <Link
@@ -69,15 +83,15 @@ export default async function ProjectDetailPage({
           </div>
 
           {/* Project Header Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <h1 className="text-4xl font-bold text-gray-900">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
+              <div className="flex-1 w-full">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 break-words">
                     {project.name}
                   </h1>
                   <span
-                    className={`px-4 py-1.5 text-sm font-semibold rounded-full ${
+                    className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full whitespace-nowrap self-start ${
                       project.status === "active"
                         ? "bg-green-100 text-green-800 border border-green-200"
                         : project.status === "completed"
@@ -89,39 +103,40 @@ export default async function ProjectDetailPage({
                   </span>
                 </div>
                 {project.description && (
-                  <p className="text-gray-600 mb-6 text-lg leading-relaxed">{project.description}</p>
+                  <p className="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg leading-relaxed break-words">{project.description}</p>
                 )}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-100">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">
                     Major Goal
                   </h3>
-                  <p className="text-xl text-gray-900 font-semibold leading-relaxed">{project.majorGoal}</p>
+                  <p className="text-lg sm:text-xl text-gray-900 font-semibold leading-relaxed break-words">{project.majorGoal}</p>
                 </div>
               </div>
               <Link
                 href={`/projects/${project.id}/milestones/new`}
-                className="ml-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-semibold flex items-center"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 font-semibold flex items-center justify-center sm:ml-6"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Add Milestone
+                <span className="hidden sm:inline">Add Milestone</span>
+                <span className="sm:hidden">Add</span>
               </Link>
             </div>
           </div>
 
           {isSunday && currentMilestone && (
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">It's Sunday! Time to track weekly progress</h3>
-                  <p className="text-blue-100 mb-4">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-4 sm:p-6 mb-6 sm:mb-8 text-white">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">It's Sunday! Time to track weekly progress</h3>
+                  <p className="text-blue-100 mb-4 text-sm sm:text-base">
                     Record what you completed last week and plan for next week.
                   </p>
                 </div>
                 <Link
                   href={`/weekly-progress/new?milestoneId=${currentMilestone.id}`}
-                  className="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors font-semibold whitespace-nowrap"
+                  className="w-full sm:w-auto bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-center sm:text-left"
                 >
                   Create Weekly Report
                 </Link>
@@ -130,9 +145,9 @@ export default async function ProjectDetailPage({
           )}
 
           {/* Milestones Section */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
-              <svg className="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-gray-100">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Milestones
@@ -149,16 +164,16 @@ export default async function ProjectDetailPage({
                   return (
                     <div
                       key={milestone.id}
-                      className={`rounded-xl p-6 border-2 transition-all duration-200 ${
+                      className={`rounded-xl p-4 sm:p-6 border-2 transition-all duration-200 ${
                         milestone.isCurrent
                           ? "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg"
                           : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            <h3 className="text-xl font-bold text-gray-900">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
+                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 break-words">
                               {milestone.title}
                             </h3>
                             {milestone.isCurrent && (
