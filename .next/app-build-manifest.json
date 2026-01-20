@@ -12,7 +12,7 @@
       "static/chunks/618f8807-add031d1b7b6a333.js",
       "static/chunks/364-c3023a8926a65c63.js",
       "static/chunks/main-app-7b9b5cb0ae6a8101.js",
-      "static/css/bcfc5b8a0d8ebcf8.css",
+      "static/css/4ffa6f2274af265e.css",
       "static/chunks/162-1b1638042d32be89.js",
       "static/chunks/app/layout-03ab598ce1a8b996.js"
     ],
@@ -49,7 +49,7 @@
       "static/chunks/main-app-7b9b5cb0ae6a8101.js",
       "static/chunks/162-1b1638042d32be89.js",
       "static/chunks/35-e17d8d02e7a778db.js",
-      "static/chunks/app/projects/page-30d296e0adf3a539.js"
+      "static/chunks/app/projects/page-8bca36d1085976fa.js"
     ],
     "/weekly-progress/new/page": [
       "static/chunks/webpack-1e82457347a9eda9.js",
@@ -58,7 +58,7 @@
       "static/chunks/main-app-7b9b5cb0ae6a8101.js",
       "static/chunks/162-1b1638042d32be89.js",
       "static/chunks/35-e17d8d02e7a778db.js",
-      "static/chunks/app/weekly-progress/new/page-891803c0f208b712.js"
+      "static/chunks/app/weekly-progress/new/page-25d9d20ee9ee4168.js"
     ],
     "/reminders/page": [
       "static/chunks/webpack-1e82457347a9eda9.js",
@@ -76,7 +76,7 @@
       "static/chunks/main-app-7b9b5cb0ae6a8101.js",
       "static/chunks/162-1b1638042d32be89.js",
       "static/chunks/35-e17d8d02e7a778db.js",
-      "static/chunks/app/page-0e122342b548e2d2.js"
+      "static/chunks/app/page-aa014fa53ebed71b.js"
     ],
     "/projects/[id]/page": [
       "static/chunks/webpack-1e82457347a9eda9.js",
@@ -85,7 +85,7 @@
       "static/chunks/main-app-7b9b5cb0ae6a8101.js",
       "static/chunks/162-1b1638042d32be89.js",
       "static/chunks/35-e17d8d02e7a778db.js",
-      "static/chunks/app/projects/[id]/page-dbdc067785942614.js"
+      "static/chunks/app/projects/[id]/page-7ed6b16f3d959f85.js"
     ]
   }
 }

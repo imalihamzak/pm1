@@ -74,11 +74,16 @@ export async function PUT(
 
     // Check access: manager can edit all, others only their own
     const userRole = (session.user as any).role || "user";
-    if (userRole !== "manager" && existingProject.createdBy !== session.user.email) {
-      return NextResponse.json(
-        { error: "Access denied. You can only edit your own projects." },
-        { status: 403 }
-      );
+    const projectCreatedBy = existingProject.createdBy;
+    
+    // If project has no creator (null), only manager can edit
+    if (userRole !== "manager") {
+      if (!projectCreatedBy || projectCreatedBy !== session.user.email) {
+        return NextResponse.json(
+          { error: "Access denied. You can only edit your own projects." },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();

@@ -3,10 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Toast from "@/components/Toast";
-import ConfirmModal from "@/components/ConfirmModal";
 
 interface Project {
   id: string;
@@ -19,31 +16,12 @@ interface Project {
 }
 
 export default function ProjectsPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [creatorFilter, setCreatorFilter] = useState<string>("all"); // For managers to filter by creator
+  const [creatorFilter, setCreatorFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    description: "",
-    majorGoal: "",
-    status: "active",
-  });
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
-    message: "",
-    type: "info",
-    isVisible: false,
-  });
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; projectId: string | null }>({
-    isOpen: false,
-    projectId: null,
-  });
-  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
   // Check if user is manager
   const isManager = (session?.user as any)?.role === "manager";
@@ -65,10 +43,6 @@ export default function ProjectsPage() {
     if (email === "nazish@softechinc.ai") return "bg-purple-100 text-purple-700 border-purple-200";
     if (email === "soban@softechinc.ai") return "bg-green-100 text-green-700 border-green-200";
     return "bg-gray-100 text-gray-700 border-gray-200";
-  };
-
-  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
-    setToast({ message, type, isVisible: true });
   };
 
   useEffect(() => {
@@ -103,82 +77,13 @@ export default function ProjectsPage() {
       const response = await fetch("/api/projects");
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched projects:", data);
-        console.log("Number of projects:", data.length);
         setProjects(data);
         setFilteredProjects(data);
-      } else {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleEdit = (project: Project) => {
-    setEditingId(project.id);
-    setEditForm({
-      name: project.name,
-      description: project.description || "",
-      majorGoal: project.majorGoal,
-      status: project.status,
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingId) return;
-
-    try {
-      const response = await fetch(`/api/projects/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      });
-
-      if (response.ok) {
-        setEditingId(null);
-        fetchProjects();
-        showToast("Project updated successfully!", "success");
-      } else {
-        showToast("Failed to update project", "error");
-      }
-    } catch (error) {
-      console.error("Error updating project:", error);
-      showToast("Error updating project", "error");
-    }
-  };
-
-  const handleDeleteClick = (id: string) => {
-    setDeleteModal({ isOpen: true, projectId: id });
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteModal.projectId) return;
-
-    setDeletingProjectId(deleteModal.projectId);
-
-    try {
-      const response = await fetch(`/api/projects/${deleteModal.projectId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        fetchProjects();
-        setDeleteModal({ isOpen: false, projectId: null });
-        showToast("Project deleted successfully!", "success");
-      } else {
-        showToast("Failed to delete project", "error");
-        setDeleteModal({ isOpen: false, projectId: null });
-      }
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      showToast("Error deleting project", "error");
-      setDeleteModal({ isOpen: false, projectId: null });
-    } finally {
-      setDeletingProjectId(null);
     }
   };
 
@@ -285,172 +190,72 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredProjects.map((project) => (
-                <div
+                <Link
                   key={project.id}
-                  className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-6 border border-gray-100 transform hover:-translate-y-1 sm:hover:-translate-y-2 group"
+                  href={`/projects/${project.id}`}
+                  className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-4 sm:p-6 border border-gray-100 transform hover:-translate-y-1 sm:hover:-translate-y-2 group cursor-pointer block"
                 >
-                  {editingId === project.id ? (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-lg font-bold"
-                        placeholder="Project name"
-                      />
-                      <textarea
-                        value={editForm.description}
-                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Description"
-                        rows={2}
-                      />
-                      <input
-                        type="text"
-                        value={editForm.majorGoal}
-                        onChange={(e) => setEditForm({ ...editForm, majorGoal: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Major Goal"
-                      />
-                      <select
-                        value={editForm.status}
-                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate flex-1 min-w-0">
+                      {project.name}
+                    </h2>
+                    <span
+                      className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
+                        project.status === "active"
+                          ? "bg-green-100 text-green-800 border border-green-200"
+                          : project.status === "completed"
+                          ? "bg-gray-100 text-gray-800 border border-gray-200"
+                          : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                      }`}
+                    >
+                      {project.status}
+                    </span>
+                  </div>
+                  {/* Show creator badge for managers */}
+                  {isManager && project.createdBy && (
+                    <div className="mb-3">
+                      <span
+                        className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getCreatorBadgeColor(project.createdBy)}`}
                       >
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
-                        <option value="on-hold">On Hold</option>
-                      </select>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveEdit}
-                          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                        Created by: {getCreatorName(project.createdBy)}
+                      </span>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start justify-between mb-3 gap-2">
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="flex-1 min-w-0 group-hover:text-blue-600 transition-colors"
-                        >
-                          <h2 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
-                            {project.name}
-                          </h2>
-                        </Link>
-                        <span
-                          className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
-                            project.status === "active"
-                              ? "bg-green-100 text-green-800 border border-green-200"
-                              : project.status === "completed"
-                              ? "bg-gray-100 text-gray-800 border border-gray-200"
-                              : "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                          }`}
-                        >
-                          {project.status}
-                        </span>
-                      </div>
-                      {/* Show creator badge for managers */}
-                      {isManager && project.createdBy && (
-                        <div className="mb-3">
-                          <span
-                            className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getCreatorBadgeColor(project.createdBy)}`}
-                          >
-                            Created by: {getCreatorName(project.createdBy)}
-                          </span>
-                        </div>
-                      )}
-                      {/* Show "My Project" badge for non-managers */}
-                      {!isManager && project.createdBy === currentUserEmail && (
-                        <div className="mb-3">
-                          <span className="px-2.5 py-1 text-xs font-medium rounded-full border bg-blue-100 text-blue-700 border-blue-200">
-                            My Project
-                          </span>
-                        </div>
-                      )}
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">
-                        {project.description || "No description"}
-                      </p>
-                      <div className="mb-4 pb-4 border-b border-gray-100">
-                        <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Major Goal</p>
-                        <p className="text-sm text-gray-800 font-medium leading-relaxed">
-                          {project.majorGoal}
-                        </p>
-                      </div>
-                      {project.milestones.length > 0 && (
-                        <div className="flex items-center text-sm mb-4">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                          <span className="text-blue-600 font-medium">Current: {project.milestones[0].title}</span>
-                        </div>
-                      )}
-                      {project.milestones.length === 0 && (
-                        <div className="flex items-center text-sm text-gray-400 mb-4">
-                          <span>No current milestone</span>
-                        </div>
-                      )}
-                      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="flex-1 text-center bg-blue-50 text-blue-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-100 font-semibold text-sm sm:text-base transition-colors"
-                        >
-                          View
-                        </Link>
-                        <button
-                          onClick={() => handleEdit(project)}
-                          className="flex-1 bg-gray-100 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-200 font-semibold text-sm sm:text-base transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(project.id)}
-                          disabled={deletingProjectId === project.id}
-                          className={`flex-1 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm sm:text-base transition-colors ${
-                            deletingProjectId === project.id
-                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              : "bg-red-50 text-red-600 hover:bg-red-100"
-                          }`}
-                        >
-                          {deletingProjectId === project.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </>
                   )}
-                </div>
+                  {/* Show "My Project" badge for non-managers */}
+                  {!isManager && project.createdBy === currentUserEmail && (
+                    <div className="mb-3">
+                      <span className="px-2.5 py-1 text-xs font-medium rounded-full border bg-blue-100 text-blue-700 border-blue-200">
+                        My Project
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">
+                    {project.description || "No description"}
+                  </p>
+                  <div className="mb-4 pb-4 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Major Goal</p>
+                    <p className="text-sm text-gray-800 font-medium leading-relaxed line-clamp-2">
+                      {project.majorGoal}
+                    </p>
+                  </div>
+                  {project.milestones.length > 0 && (
+                    <div className="flex items-center text-sm mb-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                      <span className="text-blue-600 font-medium">Current: {project.milestones[0].title}</span>
+                    </div>
+                  )}
+                  {project.milestones.length === 0 && (
+                    <div className="flex items-center text-sm text-gray-400 mb-2">
+                      <span>No current milestone</span>
+                    </div>
+                  )}
+                </Link>
               ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* Toast Notification */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onClose={() => setToast({ ...toast, isVisible: false })}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={deleteModal.isOpen}
-        title="Delete Project"
-        message="Are you sure you want to delete this project? All milestones and related data will be deleted. This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        type="danger"
-        isLoading={deletingProjectId !== null}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteModal({ isOpen: false, projectId: null })}
-      />
     </div>
   );
 }
+

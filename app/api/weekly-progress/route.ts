@@ -49,11 +49,15 @@ export async function POST(request: NextRequest) {
 
     // Check access: manager can access all, others only their own projects
     const userRole = (session.user as any).role || "user";
-    if (userRole !== "manager" && milestone.project.createdBy !== session.user.email) {
-      return NextResponse.json(
-        { error: "Access denied. You can only add progress to your own projects." },
-        { status: 403 }
-      );
+    const projectCreatedBy = milestone.project.createdBy;
+    
+    if (userRole !== "manager") {
+      if (!projectCreatedBy || projectCreatedBy !== session.user.email) {
+        return NextResponse.json(
+          { error: "Access denied. You can only add progress to your own projects." },
+          { status: 403 }
+        );
+      }
     }
 
     const weeklyProgress = await prisma.weeklyProgress.create({

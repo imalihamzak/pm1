@@ -8,6 +8,7 @@
   "/api/reminders/[id]/route": "app/api/reminders/[id]/route.js",
   "/api/reminders/route": "app/api/reminders/route.js",
   "/api/reminders/send/route": "app/api/reminders/send/route.js",
+  "/api/weekly-progress/[id]/route": "app/api/weekly-progress/[id]/route.js",
   "/api/weekly-progress/route": "app/api/weekly-progress/route.js",
   "/login/page": "app/login/page.js",
   "/projects/[id]/milestones/new/page": "app/projects/[id]/milestones/new/page.js",
