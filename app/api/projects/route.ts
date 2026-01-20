@@ -80,6 +80,14 @@ export async function GET() {
         console.log("No projects found!");
       }
       
+      console.log("=== RESULTS ===");
+      console.log("Found projects:", projects.length, "for user:", userEmail, "with role:", userRole);
+      if (projects.length > 0) {
+        console.log("Projects list:", projects.map(p => ({ id: p.id, name: p.name, createdBy: p.createdBy })));
+      } else {
+        console.log("No projects found!");
+      }
+      
       return NextResponse.json(projects);
     } catch (prismaError: any) {
       // If Prisma error is about null values, try using MongoDB directly
@@ -90,16 +98,6 @@ export async function GET() {
       }
       throw prismaError;
     }
-    
-    console.log("=== RESULTS ===");
-    console.log("Found projects:", projects.length, "for user:", userEmail, "with role:", userRole);
-    if (projects.length > 0) {
-      console.log("Projects list:", projects.map(p => ({ id: p.id, name: p.name, createdBy: p.createdBy })));
-    } else {
-      console.log("No projects found!");
-    }
-    
-    return NextResponse.json(projects);
   } catch (error) {
     console.error("=== ERROR FETCHING PROJECTS ===");
     console.error("Error:", error);
