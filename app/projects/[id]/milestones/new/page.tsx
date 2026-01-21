@@ -161,7 +161,7 @@ export default function NewMilestonePage() {
                       Set as current milestone
                     </span>
                     <p className="text-xs text-gray-500 mt-1">
-                      Only one milestone per project can be current at a time
+                      Up to 2 milestones per project can be current at a time
                     </p>
                   </div>
                 </label>

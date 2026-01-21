@@ -44,12 +44,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If setting this milestone as current, unset all other current milestones for this project
+    // If setting this milestone as current, check if we already have 2 current milestones
+    // If so, unset the oldest one (by createdAt) to make room
     if (isCurrent) {
-      await prisma.milestone.updateMany({
+      const currentMilestones = await prisma.milestone.findMany({
         where: { projectId, isCurrent: true },
-        data: { isCurrent: false },
+        orderBy: { createdAt: 'asc' },
       });
+
+      // If we already have 2 current milestones, unset the oldest one
+      if (currentMilestones.length >= 2) {
+        await prisma.milestone.update({
+          where: { id: currentMilestones[0].id },
+          data: { isCurrent: false },
+        });
+      }
     }
 
     const milestone = await prisma.milestone.create({

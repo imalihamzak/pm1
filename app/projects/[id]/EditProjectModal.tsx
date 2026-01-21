@@ -57,7 +57,7 @@ export default function EditProjectModal({
           onClick={onClose}
         ></div>
 
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+        <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 border border-slate-200">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Project</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">

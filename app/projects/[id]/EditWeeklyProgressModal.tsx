@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Toast from "@/components/Toast";
 
 interface EditWeeklyProgressModalProps {
   progressId: string;
@@ -25,6 +26,15 @@ export default function EditWeeklyProgressModal({
   const [goalsAchieved, setGoalsAchieved] = useState(initialData.goalsAchieved);
   const [notes, setNotes] = useState(initialData.notes || "");
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type, isVisible: true });
+  };
 
   const addCompletedTask = () => {
     setCompletedTasks([...completedTasks, ""]);
@@ -71,15 +81,18 @@ export default function EditWeeklyProgressModal({
       });
 
       if (response.ok) {
-        onSuccess("Weekly progress updated successfully!");
-        onClose();
+        showToast("Weekly progress updated successfully!", "success");
+        setTimeout(() => {
+          onSuccess("Weekly progress updated successfully!");
+          onClose();
+        }, 1000);
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to update weekly progress");
+        showToast(error.error || "Failed to update weekly progress", "error");
       }
     } catch (error) {
       console.error("Error updating weekly progress:", error);
-      alert("Error updating weekly progress");
+      showToast("Error updating weekly progress", "error");
     } finally {
       setLoading(false);
     }
@@ -93,7 +106,7 @@ export default function EditWeeklyProgressModal({
           onClick={onClose}
         ></div>
 
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto border border-slate-200">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Weekly Progress</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,6 +219,12 @@ export default function EditWeeklyProgressModal({
           </form>
         </div>
       </div>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }

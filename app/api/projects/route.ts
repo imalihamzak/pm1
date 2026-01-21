@@ -59,18 +59,18 @@ export async function GET() {
     console.log("Query where clause:", JSON.stringify(queryWhere));
 
     // Use raw MongoDB query as a fallback if Prisma has issues
-    try {
-      const projects = await prisma.project.findMany({
+  try {
+    const projects = await prisma.project.findMany({
         where: queryWhere,
-        include: {
-          milestones: {
-            where: { isCurrent: true },
-          },
+      include: {
+        milestones: {
+          where: { isCurrent: true },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
       
       console.log("=== RESULTS ===");
       console.log("Found projects:", projects.length, "for user:", userEmail, "with role:", userRole);
@@ -88,7 +88,7 @@ export async function GET() {
         console.log("No projects found!");
       }
       
-      return NextResponse.json(projects);
+    return NextResponse.json(projects);
     } catch (prismaError: any) {
       // If Prisma error is about null values, try using MongoDB directly
       if (prismaError.message && prismaError.message.includes("null")) {
