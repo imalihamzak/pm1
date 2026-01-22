@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       if (currentMilestones.length >= 2) {
         await prisma.milestone.update({
           where: { id: currentMilestones[0].id },
-          data: { isCurrent: false },
-        });
+        data: { isCurrent: false },
+      });
       }
     }
 

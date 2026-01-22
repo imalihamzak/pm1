@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Toast from "@/components/Toast";
 
 interface EditProjectModalProps {
   projectId: string;
@@ -22,6 +23,15 @@ export default function EditProjectModal({
 }: EditProjectModalProps) {
   const [formData, setFormData] = useState(initialData);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
+    message: "",
+    type: "info",
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type, isVisible: true });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,25 +49,25 @@ export default function EditProjectModal({
         onClose();
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to update project");
+        showToast(error.error || "Failed to update project", "error");
       }
     } catch (error) {
       console.error("Error updating project:", error);
-      alert("Error updating project");
+      showToast("Error updating project", "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4 relative z-[101]">
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity z-[100]"
           onClick={onClose}
         ></div>
 
-        <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 border border-slate-200">
+        <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 border border-slate-200 z-[102]">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Project</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -133,6 +143,12 @@ export default function EditProjectModal({
           </form>
         </div>
       </div>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }

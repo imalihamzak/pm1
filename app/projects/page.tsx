@@ -22,6 +22,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [creatorFilter, setCreatorFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Check if user is manager
   const isManager = (session?.user as any)?.role === "manager";
@@ -54,7 +55,18 @@ export default function ProjectsPage() {
 
     // Apply creator filter (for managers only)
     if (isManager && creatorFilter !== "all") {
-      filtered = filtered.filter((project) => project.createdBy === creatorFilter);
+      filtered = filtered.filter((project) => {
+        // Handle exact match, null cases, and trim whitespace
+        const projectCreatedBy = project.createdBy?.trim().toLowerCase();
+        const filterValue = creatorFilter?.trim().toLowerCase();
+        
+        // If filtering for manager's own projects and project has null createdBy, include it (legacy projects)
+        if (creatorFilter === currentUserEmail && !project.createdBy) {
+          return true;
+        }
+        
+        return projectCreatedBy === filterValue;
+      });
     }
 
     // Apply search filter
@@ -77,6 +89,8 @@ export default function ProjectsPage() {
       const response = await fetch("/api/projects");
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched projects:", data);
+        console.log("Projects with createdBy:", data.map((p: Project) => ({ name: p.name, createdBy: p.createdBy })));
         setProjects(data);
         setFilteredProjects(data);
       }
@@ -123,20 +137,90 @@ export default function ProjectsPage() {
           <div className="mb-6 space-y-3">
             {/* Creator Filter (for managers only) */}
             {isManager && (
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filter by Creator
                 </label>
-                <select
-                  value={creatorFilter}
-                  onChange={(e) => setCreatorFilter(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
-                >
-                  <option value="all">All Projects</option>
-                  <option value="manager@softechinc.ai">My Projects</option>
-                  <option value="nazish@softechinc.ai">Nazish's Projects</option>
-                  <option value="soban@softechinc.ai">Soban's Projects</option>
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-left flex items-center justify-between hover:border-gray-400 transition-colors text-gray-900"
+                  >
+                    <span className="text-gray-900">
+                      {creatorFilter === "all" && "All Projects"}
+                      {creatorFilter === currentUserEmail && "My Projects"}
+                      {creatorFilter === "nazish@softechinc.ai" && "Nazish's Projects"}
+                      {creatorFilter === "soban@softechinc.ai" && "Soban's Projects"}
+                    </span>
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${dropdownOpen ? "transform rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {dropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setDropdownOpen(false)}
+                      ></div>
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatorFilter("all");
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors ${
+                            creatorFilter === "all" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-900"
+                          }`}
+                        >
+                          All Projects
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatorFilter(currentUserEmail);
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors ${
+                            creatorFilter === currentUserEmail ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-900"
+                          }`}
+                        >
+                          My Projects
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatorFilter("nazish@softechinc.ai");
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors ${
+                            creatorFilter === "nazish@softechinc.ai" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-900"
+                          }`}
+                        >
+                          Nazish's Projects
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatorFilter("soban@softechinc.ai");
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors ${
+                            creatorFilter === "soban@softechinc.ai" ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-900"
+                          }`}
+                        >
+                          Soban's Projects
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
             

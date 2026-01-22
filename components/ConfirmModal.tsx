@@ -33,16 +33,16 @@ export default function ConfirmModal({
       : "bg-blue-600 hover:bg-blue-700";
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4 relative z-[101]">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity z-[100]"
           onClick={onCancel}
         ></div>
 
         {/* Modal */}
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all z-[102]">
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
             <p className="text-gray-600">{message}</p>

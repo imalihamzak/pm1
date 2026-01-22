@@ -34,92 +34,88 @@ export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgress
 
   return (
     <>
-      <div className="group bg-gradient-to-br from-slate-50 to-white rounded-xl p-5 border-2 border-slate-200 hover:border-indigo-300 transition-all duration-300">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-sm font-semibold text-gray-900">
+                Week {weekNum}, {weekStart.getFullYear()}
               </div>
-              <div>
-                <div className="font-bold text-slate-900 text-lg mb-0.5">
-                  Week {weekNum}, {weekStart.getFullYear()}
-                </div>
-                <div className="text-sm text-slate-500">
-                  {formatDate(weekStart)} - {formatDate(weekEnd)}
-                </div>
-              </div>
+              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                progress.goalsAchieved 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {progress.goalsAchieved ? '✓ Achieved' : '✗ Not Achieved'}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatDate(weekStart)} - {formatDate(weekEnd)}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-              progress.goalsAchieved 
-                ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300' 
-                : 'bg-red-100 text-red-700 border-2 border-red-300'
-            }`}>
-              {progress.goalsAchieved ? '✓ Achieved' : '✗ Not Achieved'}
-            </div>
-            {canEdit && (
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all duration-200 hover:scale-105 border border-indigo-200"
-                title="Edit Progress"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
+          {canEdit && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              title="Edit Progress"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {(completedTasks.length > 0 || plannedTasks.length > 0) && (
+          <div className="space-y-2 text-sm">
+            {completedTasks.length > 0 && (
+              <div className="bg-green-50 rounded border border-green-200 p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-semibold text-green-700 uppercase">Completed</span>
+                </div>
+                <ul className="space-y-1">
+                  {completedTasks.slice(0, 2).map((task: string, idx: number) => (
+                    <li key={idx} className="text-xs text-gray-700 flex items-start">
+                      <span className="text-green-600 mr-1.5 mt-0.5">•</span>
+                      <span className="line-clamp-1">{task}</span>
+                    </li>
+                  ))}
+                  {completedTasks.length > 2 && (
+                    <li className="text-xs text-gray-500">+{completedTasks.length - 2} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+            {plannedTasks.length > 0 && (
+              <div className="bg-blue-50 rounded border border-blue-200 p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="text-xs font-semibold text-blue-700 uppercase">Planned</span>
+                </div>
+                <ul className="space-y-1">
+                  {plannedTasks.slice(0, 2).map((task: string, idx: number) => (
+                    <li key={idx} className="text-xs text-gray-700 flex items-start">
+                      <span className="text-blue-600 mr-1.5 mt-0.5">•</span>
+                      <span className="line-clamp-1">{task}</span>
+                    </li>
+                  ))}
+                  {plannedTasks.length > 2 && (
+                    <li className="text-xs text-gray-500">+{plannedTasks.length - 2} more</li>
+                  )}
+                </ul>
+              </div>
             )}
           </div>
-        </div>
-        <div className="grid md:grid-cols-2 gap-4">
-          {completedTasks.length > 0 && (
-            <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Completed</div>
-              </div>
-              <ul className="space-y-2">
-                {completedTasks.map((task: string, idx: number) => (
-                  <li key={idx} className="flex items-start text-sm text-slate-700">
-                    <span className="text-emerald-600 mr-2 mt-0.5 font-bold">✓</span>
-                    <span>{task}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {plannedTasks.length > 0 && (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <div className="text-xs font-bold text-blue-700 uppercase tracking-wide">Planned</div>
-              </div>
-              <ul className="space-y-2">
-                {plannedTasks.map((task: string, idx: number) => (
-                  <li key={idx} className="flex items-start text-sm text-slate-700">
-                    <span className="text-blue-600 mr-2 mt-0.5 font-bold">→</span>
-                    <span>{task}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        )}
+
         {progress.notes && (
-          <div className="mt-4 pt-4 border-t-2 border-slate-200">
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-              <p className="text-sm text-slate-600 italic leading-relaxed">{progress.notes}</p>
-            </div>
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-600 italic line-clamp-2">{progress.notes}</p>
           </div>
         )}
       </div>
@@ -140,4 +136,3 @@ export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgress
     </>
   );
 }
-

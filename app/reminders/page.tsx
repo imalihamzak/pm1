@@ -429,7 +429,7 @@ export default function RemindersPage() {
                               {sendingReminderId === reminder.id ? "Sending..." : "Send Now"}
                             </button>
                           )}
-                          <button
+                        <button
                             onClick={() => handleDeleteClick(reminder.id)}
                             disabled={deletingReminderId === reminder.id}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
@@ -439,7 +439,7 @@ export default function RemindersPage() {
                             }`}
                           >
                             {deletingReminderId === reminder.id ? "Deleting..." : "Delete"}
-                          </button>
+                        </button>
                         </div>
                       </div>
                     </div>

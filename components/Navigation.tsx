@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -9,6 +9,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loadingLink, setLoadingLink] = useState<string | null>(null);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -16,6 +17,43 @@ export default function Navigation() {
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+  };
+
+  const handleLinkClick = (href: string) => {
+    setLoadingLink(href);
+    closeMobileMenu();
+  };
+
+  // Clear loading state when pathname changes
+  useEffect(() => {
+    if (loadingLink) {
+      setLoadingLink(null);
+    }
+  }, [pathname]);
+
+  const NavLink = ({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) => {
+    const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
+    const isLoading = loadingLink === href;
+
+    return (
+      <Link
+        href={href}
+        onClick={() => handleLinkClick(href)}
+        className={`${className} inline-flex items-center gap-2 ${
+          isActive
+            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+            : "text-gray-700 hover:bg-gray-100"
+        } ${isLoading ? "opacity-75 cursor-wait" : ""}`}
+      >
+        <span>{children}</span>
+        {isLoading && (
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        )}
+      </Link>
+    );
   };
 
   return (
@@ -34,36 +72,24 @@ export default function Navigation() {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            <Link
+            <NavLink
               href="/"
-              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
-                pathname === "/"
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className="px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm"
             >
               Home
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               href="/projects"
-              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
-                pathname?.startsWith("/projects")
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className="px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm"
             >
               Projects
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink
               href="/reminders"
-              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
-                pathname?.startsWith("/reminders")
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className="px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm"
             >
               Reminders
-            </Link>
+            </NavLink>
             
             {session && (
               <div className="ml-4 flex items-center space-x-3 border-l border-gray-200 pl-4">
@@ -133,39 +159,24 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 animate-in slide-in-from-top">
             <div className="flex flex-col space-y-2">
-              <Link
+              <NavLink
                 href="/"
-                onClick={closeMobileMenu}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  pathname === "/"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className="px-4 py-3 rounded-lg font-medium transition-all duration-200"
               >
                 Home
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 href="/projects"
-                onClick={closeMobileMenu}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  pathname?.startsWith("/projects")
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className="px-4 py-3 rounded-lg font-medium transition-all duration-200"
               >
                 Projects
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 href="/reminders"
-                onClick={closeMobileMenu}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  pathname?.startsWith("/reminders")
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className="px-4 py-3 rounded-lg font-medium transition-all duration-200"
               >
                 Reminders
-              </Link>
+              </NavLink>
               
               {session && (
                 <div className="border-t border-gray-200 pt-4 mt-2">

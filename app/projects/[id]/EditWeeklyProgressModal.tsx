@@ -99,14 +99,14 @@ export default function EditWeeklyProgressModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
+      <div className="flex min-h-screen items-start justify-center pt-20 pb-8 px-4 relative z-[101]">
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity z-[100]"
           onClick={onClose}
         ></div>
 
-        <div className="relative bg-white rounded-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto border border-slate-200">
+        <div className="relative bg-white rounded-2xl max-w-3xl w-full p-6 max-h-[calc(100vh-8rem)] overflow-y-auto border border-slate-200 z-[102] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Weekly Progress</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">

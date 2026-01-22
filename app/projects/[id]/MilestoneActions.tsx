@@ -97,21 +97,21 @@ export default function MilestoneActions({
           <button
             onClick={handleMarkCompleted}
             disabled={updating || updatingCurrent}
-            className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
+            className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
           >
-            {updating ? "Updating..." : "Mark as Completed"}
+            {updating ? "Updating..." : "Mark Complete"}
           </button>
         )}
         <button
           onClick={handleToggleCurrent}
           disabled={updating || updatingCurrent}
-          className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 ${
+          className={`px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 ${
             isCurrent
-              ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
-              : "text-slate-600 bg-slate-50 hover:bg-slate-100"
+              ? "text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+              : "text-gray-700 bg-gray-50 hover:bg-gray-100 border-gray-200"
           }`}
         >
-          {updatingCurrent ? "Updating..." : isCurrent ? "Remove from Current" : "Set as Current"}
+          {updatingCurrent ? "Updating..." : isCurrent ? "Remove Current" : "Set Current"}
         </button>
       </div>
 
@@ -124,4 +124,3 @@ export default function MilestoneActions({
     </>
   );
 }
-

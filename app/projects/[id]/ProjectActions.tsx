@@ -73,7 +73,7 @@ export default function ProjectActions({
       <div className="flex items-center gap-2">
         <button
           onClick={() => setShowEditModal(true)}
-          className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all duration-200 hover:scale-105 border border-blue-200"
+          className="p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
           title="Edit Project"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ export default function ProjectActions({
         </button>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="p-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all duration-200 hover:scale-105 border border-red-200"
+          className="p-2.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-200"
           title="Delete Project"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,4 +132,3 @@ export default function ProjectActions({
     </>
   );
 }
-
