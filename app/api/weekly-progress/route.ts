@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       weekEndDate,
       completedThisWeek,
       plannedForNextWeek,
+      taskDelays,
       goalsAchieved,
       notes,
     } = body;
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // NOTE: taskDelays is temporarily commented out until Prisma client is regenerated
+    // After running `npx prisma generate`, uncomment the taskDelays line below
     const weeklyProgress = await prisma.weeklyProgress.create({
       data: {
         milestoneId,
@@ -67,6 +70,7 @@ export async function POST(request: NextRequest) {
         weekEndDate: new Date(weekEndDate),
         completedThisWeek,
         plannedForNextWeek,
+        // taskDelays: taskDelays || null, // Uncomment after running `npx prisma generate`
         goalsAchieved: goalsAchieved || false,
         notes: notes || null,
       },

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import EditWeeklyProgressModal from "./EditWeeklyProgressModal";
-import { formatDate, getWeekNumber } from "@/lib/utils";
+import { formatDate, getWeekNumber, getWeekSinceProjectStart, getISOWeek } from "@/lib/utils";
 
 interface WeeklyProgressItemProps {
   progress: {
@@ -12,21 +12,26 @@ interface WeeklyProgressItemProps {
     weekEndDate: Date;
     completedThisWeek: string;
     plannedForNextWeek: string;
+    taskDelays?: string | null;
     goalsAchieved: boolean;
     notes: string | null;
   };
   canEdit: boolean;
+  projectStartDate: Date;
 }
 
-export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgressItemProps) {
+export default function WeeklyProgressItem({ progress, canEdit, projectStartDate }: WeeklyProgressItemProps) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
   
   const weekStart = new Date(progress.weekStartDate);
   const weekEnd = new Date(progress.weekEndDate);
-  const weekNum = getWeekNumber(weekStart);
+  const weekSinceStart = getWeekSinceProjectStart(new Date(projectStartDate), weekStart);
+  const isoWeek = getISOWeek(weekStart);
   const completedTasks = JSON.parse(progress.completedThisWeek || "[]");
   const plannedTasks = JSON.parse(progress.plannedForNextWeek || "[]");
+  const taskDelays: Array<{ task: string; isCompleted: boolean; delayReasons?: string[]; delayReasonText?: string }> = 
+    progress.taskDelays ? JSON.parse(progress.taskDelays) : [];
 
   const handleSuccess = (message: string) => {
     router.refresh();
@@ -39,7 +44,7 @@ export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgress
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm font-semibold text-gray-900">
-                Week {weekNum}, {weekStart.getFullYear()}
+                Week {weekSinceStart} ({isoWeek})
               </div>
               <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
                 progress.goalsAchieved 
@@ -77,12 +82,40 @@ export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgress
                   <span className="text-xs font-semibold text-green-700 uppercase">Completed</span>
                 </div>
                 <ul className="space-y-1">
-                  {completedTasks.slice(0, 2).map((task: string, idx: number) => (
-                    <li key={idx} className="text-xs text-gray-700 flex items-start">
-                      <span className="text-green-600 mr-1.5 mt-0.5">•</span>
-                      <span className="line-clamp-1">{task}</span>
-                    </li>
-                  ))}
+                  {completedTasks.slice(0, 2).map((task: string, idx: number) => {
+                    const delay = taskDelays.find((d) => d.task === task);
+                    const isCompleted = delay?.isCompleted ?? true; // Default to true if no delay entry
+                    const hasDelay = delay && !isCompleted && delay.delayReasons && delay.delayReasons.length > 0;
+                    return (
+                      <li key={idx} className="text-xs text-gray-700">
+                        <div className="flex items-start">
+                          <span className={`mr-1.5 mt-0.5 ${isCompleted ? 'text-green-600' : hasDelay ? 'text-red-600' : 'text-yellow-600'}`}>
+                            {isCompleted ? '✓' : hasDelay ? '⚠' : '○'}
+                          </span>
+                          <div className="flex-1">
+                            <span className={isCompleted ? '' : 'text-gray-600'}>{task}</span>
+                            {hasDelay && (
+                              <div className="mt-1 ml-4 text-xs text-red-600">
+                                <span className="font-medium">
+                                  {delay.delayReasons?.map((reason, i) => {
+                                    const labels: Record<string, string> = {
+                                      'client': 'Delayed by client',
+                                      'developer': 'Delayed by developer',
+                                      'other': 'Other reason'
+                                    };
+                                    return labels[reason] || reason;
+                                  }).join(', ')}
+                                </span>
+                                {delay.delayReasonText && (
+                                  <span className="block mt-0.5 text-gray-600">{delay.delayReasonText}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
                   {completedTasks.length > 2 && (
                     <li className="text-xs text-gray-500">+{completedTasks.length - 2} more</li>
                   )}
@@ -126,6 +159,7 @@ export default function WeeklyProgressItem({ progress, canEdit }: WeeklyProgress
           initialData={{
             completedThisWeek: completedTasks,
             plannedForNextWeek: plannedTasks,
+            taskDelays: taskDelays as Array<{ task: string; isCompleted: boolean; delayReasons?: ("client" | "developer" | "other")[]; delayReasonText?: string }>,
             goalsAchieved: progress.goalsAchieved,
             notes: progress.notes,
           }}

@@ -3,8 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navigation from "@/components/Navigation";
-import { getCurrentWeekSunday, getCurrentWeekSaturday } from "@/lib/utils";
+import { getCurrentWeekSunday, getCurrentWeekSaturday, getWeekSinceProjectStart, getISOWeek } from "@/lib/utils";
 import Toast from "@/components/Toast";
+
+interface TaskDelay {
+  task: string;
+  isCompleted: boolean;
+  delayReasons?: ("client" | "developer" | "other")[];
+  delayReasonText?: string;
+}
 
 export default function WeeklyProgressForm() {
   const router = useRouter();
@@ -12,6 +19,10 @@ export default function WeeklyProgressForm() {
   const milestoneId = searchParams.get("milestoneId");
 
   const [loading, setLoading] = useState(false);
+  const [fetchingProject, setFetchingProject] = useState(true);
+  const [projectData, setProjectData] = useState<{ createdAt: string; name: string } | null>(null);
+  const [weekNumber, setWeekNumber] = useState<number | null>(null);
+  const [isoWeek, setIsoWeek] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info"; isVisible: boolean }>({
     message: "",
     type: "info",
@@ -23,6 +34,7 @@ export default function WeeklyProgressForm() {
     weekEndDate: "",
     completedThisWeek: [""],
     plannedForNextWeek: [""],
+    taskDelays: [{ task: "", isCompleted: false, delayReasons: [] }] as TaskDelay[],
     goalsAchieved: false,
     notes: "",
   });
@@ -35,24 +47,61 @@ export default function WeeklyProgressForm() {
       weekStartDate: sunday.toISOString().split("T")[0],
       weekEndDate: saturday.toISOString().split("T")[0],
     }));
-  }, []);
+
+    // Fetch milestone and project data
+    if (milestoneId) {
+      fetch(`/api/milestones/${milestoneId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.project) {
+            setProjectData({
+              createdAt: data.project.createdAt,
+              name: data.project.name,
+            });
+            const projectStartDate = new Date(data.project.createdAt);
+            const currentWeek = getWeekSinceProjectStart(projectStartDate, sunday);
+            const currentIsoWeek = getISOWeek(sunday);
+            setWeekNumber(currentWeek);
+            setIsoWeek(currentIsoWeek);
+          }
+          setFetchingProject(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching project data:", error);
+          setFetchingProject(false);
+        });
+    } else {
+      setFetchingProject(false);
+    }
+  }, [milestoneId]);
 
   const addCompletedTask = () => {
     setFormData({
       ...formData,
       completedThisWeek: [...formData.completedThisWeek, ""],
+      taskDelays: [...formData.taskDelays, { task: "", isCompleted: false, delayReasons: [] }],
     });
   };
 
   const updateCompletedTask = (index: number, value: string) => {
     const updated = [...formData.completedThisWeek];
     updated[index] = value;
-    setFormData({ ...formData, completedThisWeek: updated });
+    
+    // Update task delay entry if it exists
+    const updatedDelays = [...formData.taskDelays];
+    if (updatedDelays[index]) {
+      updatedDelays[index] = { ...updatedDelays[index], task: value };
+    } else {
+      updatedDelays[index] = { task: value, isCompleted: false, delayReasons: [] };
+    }
+    
+    setFormData({ ...formData, completedThisWeek: updated, taskDelays: updatedDelays });
   };
 
   const removeCompletedTask = (index: number) => {
     const updated = formData.completedThisWeek.filter((_, i) => i !== index);
-    setFormData({ ...formData, completedThisWeek: updated });
+    const updatedDelays = formData.taskDelays.filter((_, i) => i !== index);
+    setFormData({ ...formData, completedThisWeek: updated, taskDelays: updatedDelays });
   };
 
   const addPlannedTask = () => {
@@ -71,6 +120,51 @@ export default function WeeklyProgressForm() {
   const removePlannedTask = (index: number) => {
     const updated = formData.plannedForNextWeek.filter((_, i) => i !== index);
     setFormData({ ...formData, plannedForNextWeek: updated });
+  };
+
+  const updateTaskCompletion = (index: number, isCompleted: boolean) => {
+    const updatedDelays = [...formData.taskDelays];
+    if (!updatedDelays[index]) {
+      updatedDelays[index] = { task: formData.completedThisWeek[index] || "", isCompleted: false, delayReasons: [] };
+    }
+    updatedDelays[index] = { ...updatedDelays[index], isCompleted };
+    if (isCompleted) {
+      // Clear delay reasons if task is completed
+      updatedDelays[index].delayReasons = [];
+      updatedDelays[index].delayReasonText = undefined;
+    }
+    setFormData({ ...formData, taskDelays: updatedDelays });
+  };
+
+  const toggleTaskDelayReason = (index: number, reason: "client" | "developer" | "other") => {
+    const updatedDelays = [...formData.taskDelays];
+    if (!updatedDelays[index]) {
+      updatedDelays[index] = { task: formData.completedThisWeek[index] || "", isCompleted: false, delayReasons: [] };
+    }
+    const currentReasons = updatedDelays[index].delayReasons || [];
+    const isSelected = currentReasons.includes(reason);
+    
+    if (isSelected) {
+      // Remove the reason
+      updatedDelays[index].delayReasons = currentReasons.filter(r => r !== reason);
+      if (reason === "other") {
+        updatedDelays[index].delayReasonText = undefined;
+      }
+    } else {
+      // Add the reason
+      updatedDelays[index].delayReasons = [...currentReasons, reason];
+    }
+    
+    setFormData({ ...formData, taskDelays: updatedDelays });
+  };
+
+  const updateTaskDelayReasonText = (index: number, text: string) => {
+    const updatedDelays = [...formData.taskDelays];
+    if (!updatedDelays[index]) {
+      updatedDelays[index] = { task: formData.completedThisWeek[index] || "", isCompleted: false, delayReasons: [] };
+    }
+    updatedDelays[index] = { ...updatedDelays[index], delayReasonText: text };
+    setFormData({ ...formData, taskDelays: updatedDelays });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +190,9 @@ export default function WeeklyProgressForm() {
           ),
           plannedForNextWeek: JSON.stringify(
             formData.plannedForNextWeek.filter((t) => t.trim() !== "")
+          ),
+          taskDelays: JSON.stringify(
+            formData.taskDelays.filter((d, i) => formData.plannedForNextWeek[i]?.trim() !== "")
           ),
           weekStartDate: new Date(formData.weekStartDate),
           weekEndDate: new Date(formData.weekEndDate),
@@ -125,9 +222,11 @@ export default function WeeklyProgressForm() {
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Weekly Progress Report
-          </h1>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Weekly Progress Report
+            </h1>
+          </div>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
             <div className="mb-6">
@@ -170,26 +269,96 @@ export default function WeeklyProgressForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Completed This Week *
               </label>
-              {formData.completedThisWeek.map((task, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={task}
-                    onChange={(e) => updateCompletedTask(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter completed task or achievement"
-                  />
-                  {formData.completedThisWeek.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeCompletedTask(index)}
-                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
+              {formData.completedThisWeek.map((task, index) => {
+                const taskDelay = formData.taskDelays[index] || { task: task, isCompleted: false, delayReasons: [] };
+                const isCompleted = taskDelay.isCompleted || false;
+                const delayReasons = taskDelay.delayReasons || [];
+                
+                return (
+                  <div key={index} className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        type="text"
+                        value={task}
+                        onChange={(e) => updateCompletedTask(index, e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        placeholder="Enter completed task or achievement"
+                      />
+                      {formData.completedThisWeek.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeCompletedTask(index)}
+                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Task completion checkbox */}
+                    <div className="mb-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isCompleted}
+                          onChange={(e) => updateTaskCompletion(index, e.target.checked)}
+                          className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          Task completed
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Delay reason section (only show if task is not completed) */}
+                    {!isCompleted && (
+                      <div className="mt-3 pt-3 border-t border-gray-300">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Delay Reason (if not completed):
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={delayReasons.includes("client")}
+                              onChange={() => toggleTaskDelayReason(index, "client")}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="text-sm text-gray-700">Delayed by client</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={delayReasons.includes("developer")}
+                              onChange={() => toggleTaskDelayReason(index, "developer")}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="text-sm text-gray-700">Delayed by developer</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={delayReasons.includes("other")}
+                              onChange={() => toggleTaskDelayReason(index, "other")}
+                              className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span className="text-sm text-gray-700">Other reason</span>
+                          </label>
+                          {delayReasons.includes("other") && (
+                            <textarea
+                              value={taskDelay.delayReasonText || ""}
+                              onChange={(e) => updateTaskDelayReasonText(index, e.target.value)}
+                              className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Please justify the reason for delay..."
+                              rows={2}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <button
                 type="button"
                 onClick={addCompletedTask}

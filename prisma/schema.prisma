@@ -51,6 +51,7 @@ model WeeklyProgress {
   weekEndDate      DateTime  // Saturday of the week
   completedThisWeek String   // JSON array stored as string
   plannedForNextWeek String  // JSON array stored as string
+  taskDelays       String?   // JSON array of delay reasons for incomplete tasks
   goalsAchieved    Boolean   @default(false)
   notes            String?
   createdAt        DateTime  @default(now())

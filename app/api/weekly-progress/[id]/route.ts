@@ -21,6 +21,7 @@ export async function PATCH(
     const {
       completedThisWeek,
       plannedForNextWeek,
+      taskDelays,
       goalsAchieved,
       notes,
     } = body;
@@ -62,6 +63,7 @@ export async function PATCH(
       data: {
         ...(completedThisWeek !== undefined && { completedThisWeek }),
         ...(plannedForNextWeek !== undefined && { plannedForNextWeek }),
+        ...(taskDelays !== undefined && { taskDelays }),
         ...(goalsAchieved !== undefined && { goalsAchieved }),
         ...(notes !== undefined && { notes }),
       },

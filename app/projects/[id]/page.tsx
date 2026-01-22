@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Navigation from "@/components/Navigation";
 import Link from "next/link";
-import { getCurrentWeekSunday, getCurrentWeekSaturday, getWeekNumber, formatDate } from "@/lib/utils";
+import { getCurrentWeekSunday, getCurrentWeekSaturday, getWeekNumber, formatDate, getWeekSinceProjectStart, getISOWeek } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import ActionButtons from "./ActionButtons";
@@ -89,16 +89,16 @@ export default async function ProjectDetailPage({
       
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <Link
-          href="/projects"
+            <Link
+              href="/projects"
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
+            >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
           Projects
-        </Link>
-      </div>
+            </Link>
+          </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Project Header */}
@@ -109,9 +109,9 @@ export default async function ProjectDetailPage({
                 <div className="flex items-center gap-4 mb-4">
                   <h1 className="text-4xl font-bold text-gray-900">{project.name}</h1>
                   <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                    project.status === "active"
+                      project.status === "active"
                       ? "bg-green-100 text-green-800"
-                      : project.status === "completed"
+                        : project.status === "completed"
                       ? "bg-gray-100 text-gray-800"
                       : "bg-yellow-100 text-yellow-800"
                   }`}>
@@ -160,14 +160,14 @@ export default async function ProjectDetailPage({
               </div>
               <p className="text-xl text-gray-700 leading-relaxed">{project.majorGoal}</p>
             </div>
+            </div>
           </div>
-        </div>
 
         {/* Sunday Banner */}
         {isSunday && currentMilestones.length > 0 && (
           <div className="bg-blue-600 rounded-lg p-6 mb-6 text-white">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
+                <div>
                 <div className="flex items-center gap-3 mb-2">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -193,9 +193,9 @@ export default async function ProjectDetailPage({
                   </WeeklyProgressLink>
                 ))}
               </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -207,8 +207,8 @@ export default async function ProjectDetailPage({
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
                     </div>
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">Milestones</h2>
@@ -219,8 +219,8 @@ export default async function ProjectDetailPage({
               </div>
 
               <div className="p-6">
-                {sortedMilestones.length === 0 ? (
-                  <div className="text-center py-12">
+            {sortedMilestones.length === 0 ? (
+              <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -228,52 +228,52 @@ export default async function ProjectDetailPage({
                     </div>
                     <p className="text-gray-600 font-medium mb-1">No milestones yet</p>
                     <p className="text-sm text-gray-500">Create your first milestone to get started</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {sortedMilestones.map((milestone) => {
-                      const progressCount = milestone.weeklyProgress.length;
-                      return (
-                        <div
-                          key={milestone.id}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedMilestones.map((milestone) => {
+                  const progressCount = milestone.weeklyProgress.length;
+                  return (
+                    <div
+                      key={milestone.id}
                           className={`rounded-lg border-2 p-5 transition-all ${
-                            milestone.isCurrent
+                        milestone.isCurrent
                               ? "border-blue-300 bg-blue-50"
                               : "border-gray-200 bg-white"
-                          }`}
-                        >
+                      }`}
+                    >
                           {/* Milestone Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="text-lg font-semibold text-gray-900">{milestone.title}</h3>
-                                {milestone.isCurrent && (
+                            {milestone.isCurrent && (
                                   <span className="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-full">
                                     CURRENT
-                                  </span>
-                                )}
+                              </span>
+                            )}
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  milestone.status === "completed"
+                                milestone.status === "completed"
                                     ? "bg-green-100 text-green-800"
-                                    : milestone.status === "in-progress"
+                                  : milestone.status === "in-progress"
                                     ? "bg-yellow-100 text-yellow-800"
                                     : "bg-gray-100 text-gray-800"
                                 }`}>
-                                  {milestone.status}
-                                </span>
-                              </div>
-                              {milestone.description && (
+                              {milestone.status}
+                            </span>
+                          </div>
+                          {milestone.description && (
                                 <p className="text-gray-600 mb-3">{milestone.description}</p>
-                              )}
-                              {milestone.targetDate && (
+                          )}
+                          {milestone.targetDate && (
                                 <div className="inline-flex items-center gap-2 text-sm text-gray-600">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                  Target: {formatDate(milestone.targetDate)}
-                                </div>
-                              )}
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Target: {formatDate(milestone.targetDate)}
                             </div>
+                          )}
+                        </div>
                             {canEditProject && (
                               <MilestoneActions
                                 milestoneId={milestone.id}
@@ -282,7 +282,7 @@ export default async function ProjectDetailPage({
                                 canEdit={canEditProject}
                               />
                             )}
-                          </div>
+                      </div>
 
                           {/* Weekly Progress Preview */}
                           {milestone.isCurrent && (
@@ -298,14 +298,14 @@ export default async function ProjectDetailPage({
                                   <WeeklyProgressLink
                                     href={`/weekly-progress/new?milestoneId=${milestone.id}`}
                                     variant="button"
-                                  >
+                                >
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                     </svg>
                                     <span>Add Progress</span>
                                   </WeeklyProgressLink>
                                 )}
-                              </div>
+                                      </div>
                               {milestone.weeklyProgress.length > 0 ? (
                                 <>
                                   <div className="text-xs text-gray-500 mb-3">{progressCount} report{progressCount !== 1 ? 's' : ''}</div>
@@ -313,8 +313,12 @@ export default async function ProjectDetailPage({
                                     {milestone.weeklyProgress.slice(0, 2).map((progress) => (
                                       <WeeklyProgressItem
                                         key={progress.id}
-                                        progress={progress}
+                                        progress={{
+                                          ...progress,
+                                          taskDelays: (progress as any).taskDelays || null,
+                                        }}
                                         canEdit={canEditProject}
+                                        projectStartDate={project.createdAt}
                                       />
                                     ))}
                                   </div>
@@ -335,13 +339,13 @@ export default async function ProjectDetailPage({
                                   )}
                                 </div>
                               )}
-                            </div>
-                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
               </div>
             </div>
           </div>
@@ -354,15 +358,15 @@ export default async function ProjectDetailPage({
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-100 rounded-lg">
                       <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
                     </div>
-                    <div>
+                        <div>
                       <h2 className="text-xl font-semibold text-gray-900">Progress History</h2>
                       <p className="text-sm text-gray-500">{allWeeklyProgress.length} report{allWeeklyProgress.length !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                </div>
+                          </div>
+                          </div>
+                        </div>
                 {currentMilestones.length > 0 && (
                   <div className="space-y-2">
                     {currentMilestones.length === 1 ? (
@@ -388,13 +392,13 @@ export default async function ProjectDetailPage({
                           >
                             {milestone.title}
                           </WeeklyProgressLink>
-                        ))}
+                              ))}
+                          </div>
+                        )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
+                      
               <div className="p-6">
                 {allWeeklyProgress.length === 0 ? (
                   <div className="text-center py-8">
@@ -421,15 +425,19 @@ export default async function ProjectDetailPage({
                     {allWeeklyProgress.map((progress) => (
                       <WeeklyProgressItem
                         key={progress.id}
-                        progress={progress}
+                        progress={{
+                          ...progress,
+                          taskDelays: (progress as any).taskDelays || null,
+                        }}
                         canEdit={canEditProject}
+                        projectStartDate={project.createdAt}
                       />
                     ))}
                   </div>
                 )}
               </div>
             </div>
-          </div>
+            </div>
         </div>
       </div>
     </div>
