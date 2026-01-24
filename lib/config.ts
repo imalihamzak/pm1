@@ -4,7 +4,7 @@
 export const config = {
   // NextAuth Configuration
   nextAuthSecret: process.env.NEXTAUTH_SECRET || "development-secret-key-change-in-production-use-random-string",
-  nextAuthUrl: process.env.NEXTAUTH_URL || "http://localhost:3000",
+  nextAuthUrl: process.env.NEXTAUTH_URL || "https://pm1-nine.vercel.app/",
 
   // Database Configuration
   databaseUrl: process.env.DATABASE_URL || "",
