@@ -1,20 +1,24 @@
-// Hardcoded configuration values
-// Update these values as needed for your deployment
+// Configuration values from environment variables
+// Set these in .env.local file
 
 export const config = {
   // NextAuth Configuration
-  nextAuthSecret: "development-secret-key-change-in-production-use-random-string",
-  nextAuthUrl: "http://localhost:3000", // Default for local dev, auto-detected on Vercel
+  nextAuthSecret: process.env.NEXTAUTH_SECRET || "development-secret-key-change-in-production-use-random-string",
+  nextAuthUrl: process.env.NEXTAUTH_URL || "http://localhost:3000",
 
   // Database Configuration
-  databaseUrl: "mongodb+srv://imalishahzadk:imalihamzak@cluster0.yxiquws.mongodb.net/pm?retryWrites=true&w=majority",
+  databaseUrl: process.env.DATABASE_URL || "",
 
   // SMTP Configuration
   smtp: {
-    host: "softechinc.ai",
-    port: 465,
-    user: "noreply@softechinc.ai",
-    pass: "y&S@!UoK83&S",
+    host: process.env.SMTP_HOST || "",
+    port: parseInt(process.env.SMTP_PORT || "465", 10),
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
   },
+
+  // Application URLs
+  appUrl: process.env.APP_URL || "https://softechinc.ai",
+  companyName: process.env.COMPANY_NAME || "Softech Inc",
 };
 

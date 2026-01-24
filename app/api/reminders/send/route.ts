@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { transporter } from "@/lib/mailer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
+import { config } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,14 +78,16 @@ export async function POST(request: NextRequest) {
 
     // Send email
     try {
-      const smtpUser = process.env.SMTP_USER || "noreply@softechinc.ai";
+      const smtpUser = config.smtp.user;
+      const appUrl = config.appUrl;
+      const companyName = config.companyName;
       console.log("Attempting to send reminder email...");
       console.log("From:", smtpUser);
       console.log("To:", reminder.recipientEmail);
       console.log("Subject:", reminder.subject);
 
       await transporter.sendMail({
-        from: `"Softech Inc" <${smtpUser}>`,
+        from: `"${companyName}" <${smtpUser}>`,
         to: reminder.recipientEmail,
         subject: reminder.subject,
         html: `
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               ${reminder.message.replace(/\n/g, '<br>')}
             </div>
-            <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from <a href="https://softechinc.ai" style="color: #2563eb; text-decoration: none;">Softech Inc</a>.</p>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from <a href="${appUrl}" style="color: #2563eb; text-decoration: none;">${companyName}</a>.</p>
           </div>
         `,
         text: `
@@ -105,7 +108,7 @@ Project: ${reminder.project.name}
 ${reminder.message}
 
 ---
-This is an automated reminder from Softech Inc (https://softechinc.ai).
+This is an automated reminder from ${companyName} (${appUrl}).
         `,
       });
 
@@ -181,10 +184,14 @@ export async function GET() {
 
     const results = [];
 
+    const appUrl = config.appUrl;
+    const companyName = config.companyName;
+    const smtpUser = config.smtp.user;
+
     for (const reminder of dueReminders) {
       try {
         await transporter.sendMail({
-          from: `"Softech Inc" <${process.env.SMTP_USER || "noreply@softechinc.ai"}>`,
+          from: `"${companyName}" <${smtpUser}>`,
           to: reminder.recipientEmail,
           subject: reminder.subject,
           html: `
@@ -194,7 +201,7 @@ export async function GET() {
               <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 ${reminder.message.replace(/\n/g, '<br>')}
               </div>
-              <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from <a href="https://softechinc.ai" style="color: #2563eb; text-decoration: none;">Softech Inc</a>.</p>
+              <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from <a href="${appUrl}" style="color: #2563eb; text-decoration: none;">${companyName}</a>.</p>
             </div>
           `,
           text: `
@@ -205,7 +212,7 @@ Project: ${reminder.project.name}
 ${reminder.message}
 
 ---
-This is an automated reminder from Softech Inc (https://softechinc.ai).
+This is an automated reminder from ${companyName} (${appUrl}).
           `,
         });
 
